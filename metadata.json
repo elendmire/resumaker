@@ -1,0 +1,5 @@
+{
+  "name": "ResuMakers",
+  "description": "A professional, ATS-friendly resume builder featuring drag-and-drop organization, AI-powered content enhancement using Gemini, and PDF/PNG export capabilities. Modeled after top-tier academic and engineering resumes.",
+  "requestFramePermissions": []
+}
