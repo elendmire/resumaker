@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ResumePreview from './components/ResumePreview';
 import EditorPanel from './components/EditorPanel';
 import { INITIAL_RESUME_DATA } from './constants';
@@ -15,6 +15,40 @@ declare global {
 
 const MAX_ENHANCE_COUNT = 5;
 
+// Toast Component
+interface ToastProps {
+  message: string;
+  type: 'success' | 'error' | 'info';
+  onClose: () => void;
+}
+
+const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const bgColors = {
+    success: 'bg-green-500',
+    error: 'bg-red-500',
+    info: 'bg-blue-500'
+  };
+
+  const icons = {
+    success: 'fa-check-circle',
+    error: 'fa-exclamation-circle',
+    info: 'fa-info-circle'
+  };
+
+  return (
+    <div className={`fixed bottom-6 right-6 ${bgColors[type]} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-[100] animate-fade-in-up transition-all`}>
+      <i className={`fas ${icons[type]} text-lg`}></i>
+      <span className="font-medium">{message}</span>
+      <button onClick={onClose} className="ml-2 hover:text-white/80"><i className="fas fa-times"></i></button>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const [data, setData] = useState<ResumeData>(INITIAL_RESUME_DATA);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -25,6 +59,28 @@ const App: React.FC = () => {
   const [showPaywall, setShowPaywall] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
+
+  // Toast State
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+  };
+
+  // Dynamic Title & Meta Description Update for SEO/UX
+  useEffect(() => {
+    // Update Title
+    const title = data.header.name 
+      ? `${data.header.name} - Resume | ResuMakers` 
+      : 'ResuMakers - Free AI Resume Builder';
+    document.title = title;
+
+    // Update Meta Description dynamically
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', `View professional resume for ${data.header.name || 'a job seeker'}. Created with ResuMakers, the free AI resume builder.`);
+    }
+  }, [data.header.name]);
 
   const handleConsumeCredit = () => {
       setCredits(prev => Math.max(0, prev - 1));
@@ -40,13 +96,13 @@ const App: React.FC = () => {
 
       const element = previewRef.current;
       
-      // 1. High-quality capture (Scale 4 for crisp text)
+      // 1. Capture Canvas (Scale 2 is sufficient for print ~150dpi, prevents large canvas crash)
       const canvas = await window.html2canvas(element, {
-        scale: 4, 
+        scale: 2, 
         useCORS: true,
         logging: false,
-        windowWidth: element.scrollWidth, 
-        windowHeight: element.scrollHeight
+        backgroundColor: '#ffffff', // Ensure opaque white background
+        scrollY: -window.scrollY // Ensure we capture from the top
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -74,7 +130,8 @@ const App: React.FC = () => {
       remainingImgHeight -= pdfHeight;
 
       // --- Subsequent Pages ---
-      while (remainingImgHeight > 1) { // 1mm tolerance
+      // Loop only if there is substantial content remaining (> 1mm)
+      while (remainingImgHeight > 1) { 
         pdf.addPage();
         
         // We want to print the content starting at `srcY` in the image.
@@ -100,9 +157,10 @@ const App: React.FC = () => {
       }
       
       pdf.save(`${data.header.name.replace(/\s+/g, '_')}_Resume.pdf`);
+      showToast("PDF downloaded successfully!", 'success');
     } catch (err) {
       console.error("PDF Export failed", err);
-      alert("Failed to export PDF. Please check console.");
+      showToast("Failed to export PDF.", 'error');
     } finally {
       setIsExporting(false);
     }
@@ -115,13 +173,18 @@ const App: React.FC = () => {
     try {
         await new Promise(resolve => setTimeout(resolve, 100));
         const element = previewRef.current;
-        const canvas = await window.html2canvas(element, { scale: 4 });
+        const canvas = await window.html2canvas(element, { 
+            scale: 2,
+            backgroundColor: '#ffffff'
+        });
         const link = document.createElement('a');
         link.download = `${data.header.name.replace(/\s+/g, '_')}_Resume.png`;
         link.href = canvas.toDataURL();
         link.click();
+        showToast("PNG downloaded successfully!", 'success');
     } catch(err) {
         console.error("PNG Export failed", err);
+        showToast("Failed to export PNG.", 'error');
     } finally {
         setIsExporting(false);
     }
@@ -168,10 +231,10 @@ const App: React.FC = () => {
         }
 
         setData(newData);
-        alert("All sections have been enhanced with AI!");
+        showToast("AI has enhanced your resume!", 'success');
     } catch (e) {
         console.error("Enhance all failed", e);
-        alert("Something went wrong while enhancing the resume.");
+        showToast("Something went wrong during enhancement.", 'error');
     } finally {
         setIsEnhancing(false);
     }
@@ -181,22 +244,26 @@ const App: React.FC = () => {
       setIsPro(true);
       setShowPaywall(false);
       setCredits(999);
+      showToast("Welcome to Pro! You now have unlimited enhancements.", 'success');
   };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden text-gray-800 font-sans">
       
+      {/* Toast Notification */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       {/* Paywall Modal (Global) */}
       {showPaywall && (
-        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center transform transition-all scale-100">
                 <button 
                     onClick={() => setShowPaywall(false)}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                     <i className="fas fa-times text-xl"></i>
                 </button>
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-short">
                     <i className="fas fa-crown text-3xl text-purple-600"></i>
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-2">Unlock Unlimited Power</h3>
@@ -235,33 +302,34 @@ const App: React.FC = () => {
       />
 
       {/* Preview Side */}
-      <div className="flex-1 flex flex-col h-full bg-gray-700 relative">
+      <div className="flex-1 flex flex-col h-full bg-gray-800 relative">
         {/* Toolbar */}
-        <div className="h-14 bg-gray-800 border-b border-gray-600 flex items-center justify-between px-6 shadow-md z-20">
-            <div className="flex items-center text-white gap-2 font-bold text-lg">
-                <i className="fas fa-file-alt text-blue-400"></i> ResuMakers
+        <div className="h-14 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-6 shadow-md z-20">
+            <div className="flex items-center gap-2 font-bold text-lg select-none">
+                <i className="fas fa-file-alt text-blue-400"></i> 
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">ResuMakers</span>
             </div>
             <div className="flex gap-3">
                 <button 
                     onClick={handleEnhanceAll}
                     disabled={isEnhancing || isExporting}
-                    className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-100 text-purple-700 font-medium rounded text-sm transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-100 text-purple-700 font-medium rounded text-sm transition-all shadow-sm transform active:scale-95"
                 >
                     {isEnhancing ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-magic"></i>}
                     Enhance All
                 </button>
-                <div className="w-px bg-gray-600 mx-1"></div>
+                <div className="w-px bg-gray-700 mx-1"></div>
                 <button 
                     onClick={handleDownloadPNG}
                     disabled={isExporting}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded text-sm transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors border border-gray-600"
                 >
                     <i className="fas fa-image"></i> Export PNG
                 </button>
                 <button 
                     onClick={handleDownloadPDF}
                     disabled={isExporting}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm transition-colors shadow-lg"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm transition-all shadow-lg hover:shadow-blue-500/30 active:translate-y-px"
                 >
                     {isExporting ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-file-pdf"></i>}
                     Export PDF
@@ -270,8 +338,8 @@ const App: React.FC = () => {
         </div>
 
         {/* Main Preview Area */}
-        <div className="flex-1 overflow-hidden relative bg-gray-700/50 flex justify-center">
-             <div className="w-full h-full overflow-y-auto flex justify-center py-8">
+        <div className="flex-1 overflow-hidden relative bg-gray-800 flex justify-center">
+             <div className="w-full h-full overflow-y-auto flex justify-center py-8 px-4">
                 <ResumePreview data={data} previewRef={previewRef} isExporting={isExporting} />
              </div>
         </div>
