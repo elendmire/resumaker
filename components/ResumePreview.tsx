@@ -24,7 +24,7 @@ const formatPeriod = (start: string, end: string, isCurrent: boolean) => {
 };
 
 // Helper to check if a section has valid content to display
-const hasContent = (section: any[], type: 'education' | 'experience' | 'projects' | 'skills') => {
+const hasContent = (section: any[], type: 'education' | 'experience' | 'projects' | 'skills' | 'references') => {
   if (!section || section.length === 0) return false;
   
   return section.some(item => {
@@ -40,6 +40,9 @@ const hasContent = (section: any[], type: 'education' | 'experience' | 'projects
     if (type === 'skills') {
       // Strictly require both name and items to display a skill row
       return item.name?.trim() && item.items?.trim();
+    }
+    if (type === 'references') {
+      return item.name?.trim() && (item.role?.trim() || item.company?.trim() || item.email?.trim());
     }
     return false;
   });
@@ -87,7 +90,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
       {/* Education */}
       {hasContent(data.education, 'education') && (
         <section className="mb-4">
-          <h2 className="uppercase font-bold border-b border-black mb-2 text-[11pt] tracking-wider">Education</h2>
+          <h2 className="uppercase font-bold border-b border-black pb-1 mb-2 text-[11pt] tracking-wider">Education</h2>
           {data.education.map((edu) => (
             <div key={edu.id} className="mb-2">
               <div className="flex justify-between font-bold">
@@ -118,7 +121,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
       {/* Experience */}
       {hasContent(data.experience, 'experience') && (
         <section className="mb-4">
-          <h2 className="uppercase font-bold border-b border-black mb-2 text-[11pt] tracking-wider">Experience</h2>
+          <h2 className="uppercase font-bold border-b border-black pb-1 mb-2 text-[11pt] tracking-wider">Experience</h2>
           {data.experience.map((exp) => (
             <div key={exp.id} className="mb-3">
               <div className="flex justify-between">
@@ -148,7 +151,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
       {/* Projects */}
       {hasContent(data.projects, 'projects') && (
         <section className="mb-4">
-          <h2 className="uppercase font-bold border-b border-black mb-2 text-[11pt] tracking-wider">Projects</h2>
+          <h2 className="uppercase font-bold border-b border-black pb-1 mb-2 text-[11pt] tracking-wider">Projects</h2>
           {data.projects.map((proj) => (
             <div key={proj.id} className="mb-3">
               <div className="flex justify-between">
@@ -176,8 +179,8 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
 
       {/* Skills */}
       {hasContent(data.skills, 'skills') && (
-        <section>
-          <h2 className="uppercase font-bold border-b border-black mb-2 text-[11pt] tracking-wider">Skills</h2>
+        <section className="mb-4">
+          <h2 className="uppercase font-bold border-b border-black pb-1 mb-2 text-[11pt] tracking-wider">Skills</h2>
           <div className="flex flex-col gap-1">
             {data.skills.map((skill) => {
               // Hide the row if Category or Items are empty
@@ -190,6 +193,28 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
                 </div>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {/* References */}
+      {hasContent(data.references, 'references') && (
+        <section>
+          <h2 className="uppercase font-bold border-b border-black pb-1 mb-2 text-[11pt] tracking-wider">References</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {data.references.map((ref) => (
+              <div key={ref.id} className="text-[10pt]">
+                <div className="font-bold">{ref.name}</div>
+                <div className="italic text-gray-800">
+                    {ref.role}{ref.company ? `, ${ref.company}` : ''}
+                </div>
+                {ref.email && (
+                    <a href={`mailto:${ref.email}`} className="text-gray-600 block hover:underline text-[9pt]">
+                        {ref.email}
+                    </a>
+                )}
+              </div>
+            ))}
           </div>
         </section>
       )}

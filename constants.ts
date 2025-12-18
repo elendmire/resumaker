@@ -120,5 +120,14 @@ export const INITIAL_RESUME_DATA: ResumeData = {
       name: "Tools",
       items: "Git, Figma, Sketch, Adobe Photoshop, Adobe Illustrator, Rive, Visual Studio Code"
     }
+  ],
+  references: [
+    {
+      id: 'ref-1',
+      name: "Jane Smith",
+      role: "Senior Engineering Manager",
+      company: "Apple",
+      email: "jane.smith@apple.com"
+    }
   ]
 };

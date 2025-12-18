@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ResumeData, ExperienceItem, ProjectItem, EducationItem, SkillCategory } from '../types';
+import { ResumeData, ExperienceItem, ProjectItem, EducationItem, SkillCategory, ReferenceItem } from '../types';
 import { improveText } from '../services/geminiService';
 
 interface EditorPanelProps {
@@ -23,7 +23,7 @@ const MONTHS = [
 const YEARS = Array.from({ length: 50 }, (_, i) => (new Date().getFullYear() + 5) - i);
 
 const EditorPanel: React.FC<EditorPanelProps> = ({ data, setData, credits, isPro, triggerPaywall, onConsumeCredit }) => {
-  const [activeTab, setActiveTab] = useState<'header' | 'experience' | 'education' | 'projects' | 'skills'>('header');
+  const [activeTab, setActiveTab] = useState<'header' | 'experience' | 'education' | 'projects' | 'skills' | 'references'>('header');
   const [improvingId, setImprovingId] = useState<string | null>(null);
 
   // Helper to handle AI improvement
@@ -55,7 +55,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ data, setData, credits, isPro
 
   // --- Generic List Handlers ---
   const handleListChange = (
-    section: 'experience' | 'projects' | 'education' | 'skills',
+    section: 'experience' | 'projects' | 'education' | 'skills' | 'references',
     id: string,
     field: string,
     value: any
@@ -87,7 +87,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ data, setData, credits, isPro
     });
   };
 
-  const addItem = (section: 'experience' | 'projects' | 'education' | 'skills') => {
+  const addItem = (section: 'experience' | 'projects' | 'education' | 'skills' | 'references') => {
     const id = (Date.now() + Math.random()).toString();
     let newItem: any;
 
@@ -110,6 +110,11 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ data, setData, credits, isPro
             id, school: 'University', location: 'City', degree: 'Degree', gpa: '', 
             startDate: '', endDate: '', isCurrent: false, 
             details: ['Coursework...'] 
+        };
+    }
+    else if (section === 'references') {
+        newItem = {
+            id, name: 'Reference Name', role: 'Role', company: 'Company', email: 'email@example.com'
         };
     }
     else {
@@ -278,7 +283,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ data, setData, credits, isPro
       
       {/* Tab Navigation */}
       <div className="flex overflow-x-auto bg-white border-b border-gray-200 no-scrollbar">
-        {['header', 'education', 'experience', 'projects', 'skills'].map((tab) => (
+        {['header', 'education', 'experience', 'projects', 'skills', 'references'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as any)}
@@ -521,6 +526,36 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ data, setData, credits, isPro
                         </div>
                         
                         {renderInput('Items (Comma separated)', item.items, (e) => handleListChange('skills', item.id, 'items', e.target.value))}
+                    </div>
+                 ))}
+             </div>
+        )}
+
+        {/* References */}
+        {activeTab === 'references' && (
+             <div className="space-y-6">
+                <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-bold text-gray-800">References</h3>
+                    <button onClick={() => addItem('references')} className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 shadow-sm">+ Add</button>
+                </div>
+                 {data.references && data.references.map((item, idx) => (
+                    <div 
+                        key={item.id} 
+                        className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"
+                        draggable
+                        onDragStart={(e) => onDragStart(e, 'references', idx)}
+                        onDragOver={(e) => onDragOver(e, 'references', idx)}
+                        onDrop={(e) => onDrop(e, 'references', idx)}
+                    >
+                         <div className="flex justify-between items-center mb-2 cursor-move opacity-50 hover:opacity-100">
+                            <span className="text-xs uppercase font-bold tracking-wider text-gray-400"><i className="fas fa-grip-lines mr-2"></i>Drag to Reorder</span>
+                            <button onClick={(e) => { e.stopPropagation(); removeItem('references', item.id); }} className="text-red-400 hover:text-red-600"><i className="fas fa-trash"></i></button>
+                        </div>
+                        
+                        {renderInput('Name', item.name, (e) => handleListChange('references', item.id, 'name', e.target.value))}
+                        {renderInput('Role', item.role, (e) => handleListChange('references', item.id, 'role', e.target.value))}
+                        {renderInput('Where (Company)', item.company, (e) => handleListChange('references', item.id, 'company', e.target.value))}
+                        {renderInput('Email', item.email, (e) => handleListChange('references', item.id, 'email', e.target.value))}
                     </div>
                  ))}
              </div>

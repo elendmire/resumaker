@@ -46,18 +46,19 @@ export interface SkillCategory {
   items: string; // e.g. "TypeScript, C++"
 }
 
+export interface ReferenceItem {
+  id: string;
+  name: string;
+  role: string;
+  company: string; // "Where"
+  email: string;
+}
+
 export interface ResumeData {
   header: ResumeHeader;
   education: EducationItem[];
   experience: ExperienceItem[];
   projects: ProjectItem[];
   skills: SkillCategory[];
-}
-
-export enum SectionType {
-  HEADER = 'HEADER',
-  EDUCATION = 'EDUCATION',
-  EXPERIENCE = 'EXPERIENCE',
-  PROJECTS = 'PROJECTS',
-  SKILLS = 'SKILLS'
+  references: ReferenceItem[];
 }
