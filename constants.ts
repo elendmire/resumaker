@@ -7,7 +7,11 @@ export const INITIAL_RESUME_DATA: ResumeData = {
     email: "yihui.hu@tufts.edu",
     linkedin: "linkedin.com/in/yihuihu",
     github: "github.com/yihui-hu",
-    website: "yihui.work"
+    website: "yihui.work",
+    address: "123 University Ave, Medford, MA 02155",
+    gender: "Male",
+    nationality: "International",
+    birthdate: "1999-01-01"
   },
   education: [
     {
@@ -49,33 +53,6 @@ export const INITIAL_RESUME_DATA: ResumeData = {
         "Developed high-performance prototypes for scrolling charts, achieving 30-50% CPU usage reduction",
         "Collaborated with Human Interface design team for best data viz practices and ergonomic API designs"
       ]
-    },
-    {
-      id: 'exp-3',
-      company: "Typo*",
-      role: "Design Engineer",
-      location: "New York City, NY",
-      startDate: "2024-01",
-      endDate: "2024-05",
-      isCurrent: false,
-      points: [
-        "Implemented custom gestures, fluid transitions for iOS app using UIKit, AppKit and SwiftUI",
-        "Redesigned and optimized commenting user flow, resulting in 94% increase in feature engagement"
-      ]
-    },
-    {
-      id: 'exp-4',
-      company: "Markit Social",
-      role: "Software Engineer Intern",
-      location: "Boston, MA",
-      startDate: "2023-05",
-      endDate: "2024-01",
-      isCurrent: false,
-      points: [
-        "Revamped web app with mass texting, custom form templates and creator dashboard with analytics",
-        "Achieved up to 20x performance gains via parallelization and batching API calls when importing contacts",
-        "Future-proofed support for upcoming features by streamlining backend Firebase functions"
-      ]
     }
   ],
   projects: [
@@ -90,18 +67,6 @@ export const INITIAL_RESUME_DATA: ResumeData = {
         "Built a native SwiftUI app for the research platform Are.na, with ~1000 active users",
         "Fine-tuned optimizations using a combination of lazy views, caching and asynchronous data loading with Combine, reducing CPU and memory usage by more than 60%"
       ]
-    },
-    {
-      id: 'proj-2',
-      name: "henesys",
-      techStack: "React, JavaScript, Express, AWS, MongoDB",
-      startDate: "2022-12",
-      endDate: "2023-02",
-      isCurrent: false,
-      points: [
-        "Built a super fast, community-focused & PWA-ready bookmarking app with 50+ organic users",
-        "Implemented text, URL & file upload REST API endpoints, alongside custom authentication with JWT"
-      ]
     }
   ],
   skills: [
@@ -114,11 +79,6 @@ export const INITIAL_RESUME_DATA: ResumeData = {
       id: 'skill-2',
       name: "Frameworks",
       items: "React, React Native, Next.js, Node, MongoDB, PostgreSQL, Express, AWS, Firebase, Redux, SwiftUI"
-    },
-    {
-      id: 'skill-3',
-      name: "Tools",
-      items: "Git, Figma, Sketch, Adobe Photoshop, Adobe Illustrator, Rive, Visual Studio Code"
     }
   ],
   references: [

@@ -5,6 +5,10 @@ export interface ResumeHeader {
   linkedin: string;
   github: string;
   website: string;
+  address?: string;
+  gender?: string;
+  nationality?: string;
+  birthdate?: string;
 }
 
 export interface EducationItem {

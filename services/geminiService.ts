@@ -1,30 +1,19 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
+import { ResumeData } from "../types";
 
-const apiKey = process.env.API_KEY;
-let ai: GoogleGenAI | null = null;
-
-if (apiKey) {
-  ai = new GoogleGenAI({ apiKey });
-}
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const improveText = async (text: string, context: string = "resume"): Promise<string> => {
-  if (!ai) {
-    console.warn("Gemini API key not found. Returning original text.");
-    return text;
-  }
+  if (!process.env.API_KEY) return text;
 
   try {
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3-flash-preview';
     const prompt = `
-      You are an expert resume writer and career coach. 
-      Please rewrite the following bullet point or text to be more impactful, concise, and action-oriented.
-      Use strong verbs and quantify results where possible.
-      Maintain the same factual meaning but sound more professional.
-      
+      You are an expert resume writer. Improve this bullet point for a resume.
+      Use strong action verbs, quantify achievements, and keep it concise.
       Context: ${context}
-      Original Text: "${text}"
-      
-      Return ONLY the improved text, no explanation or quotes.
+      Original: "${text}"
+      Return ONLY the improved string.
     `;
 
     const response = await ai.models.generateContent({
@@ -32,10 +21,48 @@ export const improveText = async (text: string, context: string = "resume"): Pro
       contents: prompt,
     });
 
-    const result = response.text;
-    return result ? result.trim() : text;
+    return response.text?.trim() || text;
   } catch (error) {
-    console.error("Error improving text with Gemini:", error);
+    console.error("Gemini Improve Error:", error);
     return text;
+  }
+};
+
+export const parseProfileData = async (rawText: string): Promise<Partial<ResumeData>> => {
+  if (!process.env.API_KEY) throw new Error("API Key missing");
+
+  try {
+    const model = 'gemini-3-flash-preview';
+    const prompt = `
+      Extract professional resume information from the following text (which could be a LinkedIn profile dump or a CV).
+      Return a JSON object matching this schema:
+      {
+        "header": { "name": string, "phone": string, "email": string, "linkedin": string, "github": string, "website": string, "address": string, "gender": string, "nationality": string, "birthdate": "YYYY-MM-DD" },
+        "education": [{ "school": string, "location": string, "degree": string, "gpa": string, "startDate": "YYYY-MM", "endDate": "YYYY-MM", "isCurrent": boolean, "details": string[] }],
+        "experience": [{ "company": string, "role": string, "location": string, "startDate": "YYYY-MM", "endDate": "YYYY-MM", "isCurrent": boolean, "points": string[] }],
+        "projects": [{ "name": string, "techStack": string, "startDate": "YYYY-MM", "endDate": "YYYY-MM", "isCurrent": boolean, "points": string[] }],
+        "skills": [{ "name": string, "items": string }],
+        "references": [{ "name": string, "role": string, "company": string, "email": string }]
+      }
+
+      Text to parse:
+      ${rawText}
+    `;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const jsonStr = response.text;
+    if (!jsonStr) throw new Error("No data returned from AI");
+    
+    return JSON.parse(jsonStr);
+  } catch (error) {
+    console.error("Gemini Parse Error:", error);
+    throw error;
   }
 };

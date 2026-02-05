@@ -10,9 +10,11 @@ interface ResumePreviewProps {
 // Helper to format YYYY-MM to MMM YYYY
 const formatDate = (dateString: string) => {
   if (!dateString) return '';
-  const date = new Date(dateString + '-01'); // Append day to make it parseable
-  // Check for invalid date
+  const date = new Date(dateString + (dateString.length === 7 ? '-01' : ''));
   if (isNaN(date.getTime())) return dateString; 
+  if (dateString.length > 7) {
+      return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
   return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 };
 
@@ -23,40 +25,32 @@ const formatPeriod = (start: string, end: string, isCurrent: boolean) => {
   return startStr && endStr ? `${startStr} – ${endStr}` : startStr || endStr;
 };
 
-// Helper to check if a section has valid content to display
 const hasContent = (section: any[], type: 'education' | 'experience' | 'projects' | 'skills' | 'references') => {
   if (!section || section.length === 0) return false;
-  
   return section.some(item => {
-    if (type === 'education') {
-      return item.school?.trim() || item.degree?.trim() || (item.details && item.details.some((d: string) => d.trim()));
-    }
-    if (type === 'experience') {
-      return item.company?.trim() || item.role?.trim() || (item.points && item.points.some((p: string) => p.trim()));
-    }
-    if (type === 'projects') {
-      return item.name?.trim() || item.techStack?.trim() || (item.points && item.points.some((p: string) => p.trim()));
-    }
-    if (type === 'skills') {
-      // Strictly require both name and items to display a skill row
-      return item.name?.trim() && item.items?.trim();
-    }
-    if (type === 'references') {
-      return item.name?.trim() && (item.role?.trim() || item.company?.trim() || item.email?.trim());
-    }
+    if (type === 'education') return item.school?.trim() || item.degree?.trim();
+    if (type === 'experience') return item.company?.trim() || item.role?.trim();
+    if (type === 'projects') return item.name?.trim() || item.techStack?.trim();
+    if (type === 'skills') return item.name?.trim() && item.items?.trim();
+    if (type === 'references') return item.name?.trim();
     return false;
   });
 };
 
 const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExporting }) => {
-  // Filter out empty contact details for the header
   const contactItems = [
     data.header.phone,
-    data.header.email && <a href={`mailto:${data.header.email}`} className="hover:underline">{data.header.email}</a>,
-    data.header.linkedin && <a href={`https://${data.header.linkedin}`} target="_blank" rel="noreferrer" className="hover:underline">{data.header.linkedin}</a>,
-    data.header.github && <a href={`https://${data.header.github}`} target="_blank" rel="noreferrer" className="hover:underline">{data.header.github}</a>,
-    data.header.website && <a href={`https://${data.header.website}`} target="_blank" rel="noreferrer" className="hover:underline">{data.header.website}</a>
-  ].filter(item => typeof item === 'string' ? item.trim() !== '' : true);
+    data.header.email && <a key="email" href={`mailto:${data.header.email}`} className="hover:underline">{data.header.email}</a>,
+    data.header.linkedin && <a key="linkedin" href={`https://${data.header.linkedin}`} target="_blank" rel="noreferrer" className="hover:underline">{data.header.linkedin}</a>,
+    data.header.github && <a key="github" href={`https://${data.header.github}`} target="_blank" rel="noreferrer" className="hover:underline">{data.header.github}</a>,
+    data.header.website && <a key="web" href={`https://${data.header.website}`} target="_blank" rel="noreferrer" className="hover:underline">{data.header.website}</a>
+  ].filter(item => item && (typeof item === 'string' ? item.trim() !== '' : true));
+
+  const personalDetails = [
+    data.header.gender && <span key="gender">Gender: {data.header.gender}</span>,
+    data.header.nationality && <span key="nat">Nationality: {data.header.nationality}</span>,
+    data.header.birthdate && <span key="birth">Born: {formatDate(data.header.birthdate)}</span>
+  ].filter(Boolean);
 
   return (
     <div 
@@ -64,7 +58,6 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
       id="resume-preview"
       className="resume-preview-page bg-white p-[12mm] text-black resume-font text-[10.5pt] leading-normal relative"
     >
-      {/* Visual Page Break Indicator - Hidden during Export */}
       {!isExporting && (
          <div 
             className="absolute left-0 right-0 h-4 bg-gray-100 border-y-2 border-dashed border-gray-300 flex items-center justify-center pointer-events-none z-50 opacity-80"
@@ -74,10 +67,10 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
          </div>
       )}
 
-      {/* Header */}
-      <div className="text-center mb-4">
-        <h1 className="text-4xl font-bold mb-2 tracking-wide">{data.header.name}</h1>
-        <div className="flex justify-center flex-wrap gap-x-2 text-[10pt] text-black">
+      <div className="text-center mb-6">
+        <h1 className="text-4xl font-bold mb-1 tracking-wide">{data.header.name}</h1>
+        {data.header.address && <p className="text-[10pt] text-gray-700 mb-1">{data.header.address}</p>}
+        <div className="flex justify-center flex-wrap gap-x-2 text-[10pt] text-black mb-1">
           {contactItems.map((item, index) => (
             <React.Fragment key={index}>
               {index > 0 && <span className="text-gray-300">|</span>}
@@ -85,9 +78,18 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
             </React.Fragment>
           ))}
         </div>
+        {personalDetails.length > 0 && (
+            <div className="flex justify-center flex-wrap gap-x-3 text-[9pt] text-gray-600 mt-1">
+                {personalDetails.map((detail, index) => (
+                    <React.Fragment key={index}>
+                        {index > 0 && <span className="text-gray-200">•</span>}
+                        {detail}
+                    </React.Fragment>
+                ))}
+            </div>
+        )}
       </div>
 
-      {/* Education */}
       {hasContent(data.education, 'education') && (
         <section className="mb-4">
           <h2 className="uppercase font-bold border-b border-black pb-1 mb-2 text-[11pt] tracking-wider">Education</h2>
@@ -104,28 +106,24 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
                 </span>
                 <span>{formatPeriod(edu.startDate, edu.endDate, edu.isCurrent)}</span>
               </div>
-              {edu.details.map((detail, idx) => {
-                 if (!detail || detail.trim() === '') return null;
-                 return (
-                  <p key={idx} className="text-[10pt] pl-4 -indent-4">
-                    <span className="font-bold text-[12pt] leading-[0] mr-1">•</span>
-                    {detail}
-                  </p>
-                );
-              })}
+              {edu.details.map((detail, idx) => detail && detail.trim() && (
+                <p key={idx} className="text-[10pt] pl-4 -indent-4">
+                  <span className="font-bold text-[12pt] leading-[0] mr-1">•</span>
+                  {detail}
+                </p>
+              ))}
             </div>
           ))}
         </section>
       )}
 
-      {/* Experience */}
       {hasContent(data.experience, 'experience') && (
         <section className="mb-4">
           <h2 className="uppercase font-bold border-b border-black pb-1 mb-2 text-[11pt] tracking-wider">Experience</h2>
           {data.experience.map((exp) => (
             <div key={exp.id} className="mb-3">
-              <div className="flex justify-between">
-                <span className="font-bold">{exp.company}</span>
+              <div className="flex justify-between font-bold">
+                <span>{exp.company}</span>
                 <span>{formatPeriod(exp.startDate, exp.endDate, exp.isCurrent)}</span>
               </div>
               <div className="flex justify-between italic mb-1">
@@ -133,22 +131,18 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
                 <span>{exp.location}</span>
               </div>
               <ul className="list-none m-0 p-0">
-                {exp.points.map((point, idx) => {
-                   if (!point || point.trim() === '') return null;
-                   return (
-                    <li key={idx} className="pl-4 relative mb-0.5">
-                       <span className="absolute left-0 top-1.5 w-1 h-1 bg-black rounded-full"></span>
-                       {point}
-                    </li>
-                   );
-                })}
+                {exp.points.map((point, idx) => point && point.trim() && (
+                  <li key={idx} className="pl-4 relative mb-0.5">
+                    <span className="absolute left-0 top-1.5 w-1 h-1 bg-black rounded-full"></span>
+                    {point}
+                  </li>
+                ))}
               </ul>
             </div>
           ))}
         </section>
       )}
 
-      {/* Projects */}
       {hasContent(data.projects, 'projects') && (
         <section className="mb-4">
           <h2 className="uppercase font-bold border-b border-black pb-1 mb-2 text-[11pt] tracking-wider">Projects</h2>
@@ -161,58 +155,40 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isExpor
                 </div>
                 <span>{formatPeriod(proj.startDate, proj.endDate, proj.isCurrent)}</span>
               </div>
-              <ul className="list-none m-0 p-0 mt-1">
-                {proj.points.map((point, idx) => {
-                  if (!point || point.trim() === '') return null;
-                  return (
-                    <li key={idx} className="pl-4 relative mb-0.5">
-                       <span className="absolute left-0 top-1.5 w-1 h-1 bg-black rounded-full"></span>
-                       {point}
-                    </li>
-                  );
-                })}
+              <ul className="list-none m-0 p-0">
+                {proj.points.map((point, idx) => point && point.trim() && (
+                  <li key={idx} className="pl-4 relative mb-0.5">
+                    <span className="absolute left-0 top-1.5 w-1 h-1 bg-black rounded-full"></span>
+                    {point}
+                  </li>
+                ))}
               </ul>
             </div>
           ))}
         </section>
       )}
 
-      {/* Skills */}
       {hasContent(data.skills, 'skills') && (
         <section className="mb-4">
           <h2 className="uppercase font-bold border-b border-black pb-1 mb-2 text-[11pt] tracking-wider">Skills</h2>
-          <div className="flex flex-col gap-1">
-            {data.skills.map((skill) => {
-              // Hide the row if Category or Items are empty
-              if (!skill.name?.trim() || !skill.items?.trim()) return null;
-              
-              return (
-                <div key={skill.id} className="flex">
-                  <span className="font-bold mr-2 whitespace-nowrap">{skill.name}:</span>
-                  <span>{skill.items}</span>
-                </div>
-              );
-            })}
-          </div>
+          {data.skills.map((skill) => (
+            <div key={skill.id} className="mb-1 text-[10pt]">
+              <span className="font-bold">{skill.name}: </span>
+              <span>{skill.items}</span>
+            </div>
+          ))}
         </section>
       )}
 
-      {/* References */}
       {hasContent(data.references, 'references') && (
-        <section>
+        <section className="mb-4">
           <h2 className="uppercase font-bold border-b border-black pb-1 mb-2 text-[11pt] tracking-wider">References</h2>
           <div className="grid grid-cols-2 gap-4">
             {data.references.map((ref) => (
               <div key={ref.id} className="text-[10pt]">
-                <div className="font-bold">{ref.name}</div>
-                <div className="italic text-gray-800">
-                    {ref.role}{ref.company ? `, ${ref.company}` : ''}
-                </div>
-                {ref.email && (
-                    <a href={`mailto:${ref.email}`} className="text-gray-600 block hover:underline text-[9pt]">
-                        {ref.email}
-                    </a>
-                )}
+                <p className="font-bold">{ref.name}</p>
+                <p>{ref.role}, {ref.company}</p>
+                {ref.email && <p className="italic text-gray-600">{ref.email}</p>}
               </div>
             ))}
           </div>
